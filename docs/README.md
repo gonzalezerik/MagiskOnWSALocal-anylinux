@@ -8,13 +8,30 @@
 
 - Linux (x86_64 or arm64)
 
-  The following dependencies are required:
+  `run.sh` detects your distro from `/etc/os-release` and installs the
+  required dependencies using your native package manager. The following
+  package managers are supported out of the box:
 
-  | DistrOS             |                            |            |                    |               |               |
-  |:-------------------:|----------------------------|------------|--------------------|---------------|---------------|
-  | Debian              | `python3 aria2 unzip sudo` | `whiptail` | `python3-venv`     | `python3-pip` | `p7zip-full`  |
-  | openSUSE Tumbleweed | Same as above              | `dialog`   | `python3-venvctrl` | Same as above | Same as above |
-  | Arch                | Same as Debian             | `libnewt`  |  Same as Debian    | `python-pip`  | `p7zip`       |
+  | Family        | Examples of supported distros                                  | Package manager           |
+  |---------------|----------------------------------------------------------------|---------------------------|
+  | Debian        | Debian, Ubuntu, Linux Mint, Pop!\_OS, elementary, Kali, MX     | `apt-get`                 |
+  | Red Hat       | Fedora, RHEL, CentOS Stream, Rocky, AlmaLinux, Oracle, Amazon  | `dnf5` / `dnf` / `yum`    |
+  | Arch          | Arch, Manjaro, EndeavourOS, Artix, Garuda                      | `pacman`                  |
+  | SUSE          | openSUSE Tumbleweed, openSUSE Leap, SLES                       | `zypper`                  |
+  | Gentoo        | Gentoo                                                         | `emerge`                  |
+  | Alpine        | Alpine, postmarketOS                                           | `apk`                     |
+  | Void          | Void Linux                                                     | `xbps-install`            |
+  | Solus         | Solus                                                          | `eopkg`                   |
+
+  Underlying package names (translated automatically per distro):
+  `whiptail` (or `dialog` / `newt` / `libnewt`), `python3-pip`, `aria2`,
+  `p7zip` (or `p7zip-full` / `p7zip-plugins`), `unzip`, plus `python3-venv`
+  on Debian/Ubuntu and `python3-venvctrl` on openSUSE.
+
+  If your distro isn't in the table above but ships one of the listed package
+  managers, the script will still try to use it via a generic fallback. If
+  detection fails entirely, the script prints the dependency list and exits
+  so you can install them manually.
 
   The python3 library `requests` is used.
 
@@ -22,21 +39,15 @@
 
   - Recommended use
 
+    `run.sh` will handle all dependencies automatically on any supported
+    distro — no need to type any commands.
+
     - Ubuntu (You can use [WSL2](https://apps.microsoft.com/store/search?publisher=Canonical%20Group%20Limited))
-
-      Ready to use right out of the box.
-
     - Debian (You can use [WSL2](https://apps.microsoft.com/store/detail/debian/9MSVKQC78PK6))
-
-      Ready to use right out of the box.
-
+    - Fedora (You can use [WSL2](https://apps.microsoft.com/store/detail/fedora-remix-for-wsl/9N6GDM4K2HNC))
     - openSUSE Tumbleweed (You can use [WSL2](https://apps.microsoft.com/store/detail/opensuse-tumbleweed/9MSSK2ZXXN11))
-
-      Ready to use right out of the box.
-
-    `run.sh` will handle all dependencies automatically.
-
-    No need to type any commands.
+    - Arch Linux, Manjaro, EndeavourOS
+    - Gentoo, Alpine, Void Linux, Solus
 
 ## Features
 
