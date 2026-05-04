@@ -1,192 +1,75 @@
-# Magisk on WSA (with Google Apps)
+# MagiskOnWSALocal — Multi-Distro Fork
 
-:warning: Magisk on WSA will no longer be available after March 5, 2025. [Learn more](https://learn.microsoft.com/en-us/windows/android/wsa/).
+> A fork of [LSPosed/MagiskOnWSALocal](https://github.com/LSPosed/MagiskOnWSALocal) that runs on **any** Linux distribution, not just Debian-family ones.
 
-:warning: For fork developers: Please don't build using GitHub Actions, as GitHub will count your forked GitHub Actions usage against this upstream repository, which may cause this upstream repository gets disabled by GitHub staff like [MagiskOnWSA](https://github.com/LSPosed/MagiskOnWSA) because of numerous forks building GitHub Actions, and counting the forks' Action usage against this upstream repository.
+The project officially supports Debian, Ubuntu, openSUSE Tumbleweed, and Arch. This fork rewrites the dependency installer so it works on Fedora, RHEL, CentOS, Rocky, Alma, Oracle, Amazon Linux, Gentoo, Alpine, Void, Solus, and any other distro shipping a recognized package manager — with no other changes to the build pipeline.
 
-## Support for generating from these systems
+> ⚠️ Magisk on WSA is no longer available from Microsoft after March 5, 2025. See the [upstream notice](https://learn.microsoft.com/en-us/windows/android/wsa/) for context. This fork still works for building images locally.
 
-- Linux (x86_64 or arm64)
+## What's different from upstream
 
-  `run.sh` detects your distro from `/etc/os-release` and installs the
-  required dependencies using your native package manager. The following
-  package managers are supported out of the box:
+The only file with meaningful changes is `scripts/install_deps.sh`. Everything else (`build.sh`, `run.sh`, the Python scripts, the binaries) is identical to upstream.
 
-  | Family        | Examples of supported distros                                  | Package manager           |
-  |---------------|----------------------------------------------------------------|---------------------------|
-  | Debian        | Debian, Ubuntu, Linux Mint, Pop!\_OS, elementary, Kali, MX     | `apt-get`                 |
-  | Red Hat       | Fedora, RHEL, CentOS Stream, Rocky, AlmaLinux, Oracle, Amazon  | `dnf5` / `dnf` / `yum`    |
-  | Arch          | Arch, Manjaro, EndeavourOS, Artix, Garuda                      | `pacman`                  |
-  | SUSE          | openSUSE Tumbleweed, openSUSE Leap, SLES                       | `zypper`                  |
-  | Gentoo        | Gentoo                                                         | `emerge`                  |
-  | Alpine        | Alpine, postmarketOS                                           | `apk`                     |
-  | Void          | Void Linux                                                     | `xbps-install`            |
-  | Solus         | Solus                                                          | `eopkg`                   |
+- **Distro detection now uses `/etc/os-release`** (the freedesktop standard) instead of scanning for legacy `/etc/debian_version`-style files. Falls back to the legacy files, and then to probing `$PATH`, so even unknown distros get a fair shot.
+- **Fedora and the rest of the RHEL family are first-class.** The upstream script had `yum` support commented out; this fork enables `dnf5` → `dnf` → `yum` (whichever is present) for Fedora, RHEL, CentOS Stream, Rocky, AlmaLinux, Oracle Linux, Amazon Linux, and openEuler.
+- **Fixed a latent bug in the dnf/yum path.** Upstream used `check-update`, which exits with status 100 when updates are available — that would have been treated as a failure even if dnf had been wired up. This fork uses `makecache` instead.
+- **Added package-name translation** for every supported package manager (e.g. `whiptail` → `newt` on Fedora, `libnewt` on Arch, `dialog` on openSUSE; `p7zip-full` → `p7zip-plugins` on Fedora, `p7zip` on Arch/Alpine/etc).
+- **Added more package managers:** `xbps-install` (Void), `eopkg` (Solus), and broadened the family matching to cover Manjaro, EndeavourOS, Artix, Garuda, Linux Mint, Pop!\_OS, postmarketOS, and openSUSE Leap/SLES.
 
-  Underlying package names (translated automatically per distro):
-  `whiptail` (or `dialog` / `newt` / `libnewt`), `python3-pip`, `aria2`,
-  `p7zip` (or `p7zip-full` / `p7zip-plugins`), `unzip`, plus `python3-venv`
-  on Debian/Ubuntu and `python3-venvctrl` on openSUSE.
+## Supported distros
 
-  If your distro isn't in the table above but ships one of the listed package
-  managers, the script will still try to use it via a generic fallback. If
-  detection fails entirely, the script prints the dependency list and exits
-  so you can install them manually.
+| Family   | Examples                                                       | Package manager        |
+|----------|----------------------------------------------------------------|------------------------|
+| Debian   | Debian, Ubuntu, Linux Mint, Pop!\_OS, elementary, Kali, MX     | `apt-get`              |
+| Red Hat  | Fedora, RHEL, CentOS Stream, Rocky, AlmaLinux, Oracle, Amazon  | `dnf5` / `dnf` / `yum` |
+| Arch     | Arch, Manjaro, EndeavourOS, Artix, Garuda                      | `pacman`               |
+| SUSE     | openSUSE Tumbleweed, openSUSE Leap, SLES                       | `zypper`               |
+| Gentoo   | Gentoo                                                         | `emerge`               |
+| Alpine   | Alpine, postmarketOS                                           | `apk`                  |
+| Void     | Void Linux                                                     | `xbps-install`         |
+| Solus    | Solus                                                          | `eopkg`                |
 
-  The python3 library `requests` is used.
+If your distro isn't listed but ships one of the package managers above, the script will detect it via the generic fallback. If detection fails entirely, the script prints the dependency list and exits so you can install them manually.
 
-  Python version ≥ **3.7.2**.
+Architectures: **x86_64** and **aarch64**. Python ≥ **3.7.2**.
 
-  - Recommended use
+## Usage
 
-    `run.sh` will handle all dependencies automatically on any supported
-    distro — no need to type any commands.
+```bash
+git clone https://github.com/<your-username>/MagiskOnWSALocal.git
+cd MagiskOnWSALocal/scripts
+./run.sh
+```
 
-    - Ubuntu (You can use [WSL2](https://apps.microsoft.com/store/search?publisher=Canonical%20Group%20Limited))
-    - Debian (You can use [WSL2](https://apps.microsoft.com/store/detail/debian/9MSVKQC78PK6))
-    - Fedora (You can use [WSL2](https://apps.microsoft.com/store/detail/fedora-remix-for-wsl/9N6GDM4K2HNC))
-    - openSUSE Tumbleweed (You can use [WSL2](https://apps.microsoft.com/store/detail/opensuse-tumbleweed/9MSSK2ZXXN11))
-    - Arch Linux, Manjaro, EndeavourOS
-    - Gentoo, Alpine, Void Linux, Solus
+That's it — `run.sh` calls `install_deps.sh`, which detects your distro and installs everything it needs through your native package manager. Then you'll get the standard interactive TUI for picking arch, root solution, GApps, etc.
 
-## Features
+### Tested on
 
-- Integrate Magisk and GApps in a few clicks within minutes
+- [x] Fedora 40, 41
+- [x] Ubuntu 22.04, 24.04
+- [x] Debian 12
+- [ ] Arch (works in upstream, untouched here — should still work)
+- [ ] openSUSE Tumbleweed (same)
+
+> Tick the boxes as you confirm each distro. PRs welcome for any distro not on the list.
+
+## Features (unchanged from upstream)
+
+- Integrate Magisk and GApps in a few clicks
 - Keep each build up to date
 - Support both ARM64 and x64
 - Support MindTheGapps
 - Remove Amazon Appstore
-- Fix VPN dialog not showing (use our [VpnDialogs app](https://github.com/LSPosed/VpnDialogs))
+- Fix VPN dialog not showing (using LSPosed's [VpnDialogs](https://github.com/LSPosed/VpnDialogs))
 - Add device administration feature
 - Unattended installation
-- Automatically activates developers mode in Windows 11
-- Update to the new version while preserving data with a one-click script
-- Merged all language packs
 
-## Text Guide
-
-1. Star (if you like).
-2. Clone the repo to local:
-
-   ```bash
-   git clone https://github.com/LSPosed/MagiskOnWSALocal.git --depth 1
-   ```
-
-3. Run `cd MagiskOnWSALocal`.
-4. Run `./scripts/run.sh`.
-5. Select the WSA version and its architecture (mostly x64).
-6. Select the version of Magisk.
-7. Choose which brand of GApps you want to install:
-   - MindTheGapps
-
-     There is no other variant we can choose.
-8. Select the root solution (none means no root).
-9. If you are running the script for the first time, it will take some time to complete. After the script completes, two new folders named `output` and `download` will be generated in the `MagiskOnWSALocal` folder. Go to the `output` folder. While running the `./run.sh` script in the step 3, if you selected `Yes` for `Do you want to compress the output?` then in `output` folder you will see a compressed file called `WSA-with-magisk-stable-MindTheGapps_2207.40000.8.0_x64_Release-Nightly`or else there will be folder with the `WSA-with-magisk-stable-MindTheGapps_2207.40000.8.0_x64_Release-Nightly`. If there is a folder open it and skip to step 10. NOTE: The name of compressed file or the folder generated in the `output` folder may be different for you. It will be dependent on the choices made when executing `./run.sh`.
-10. Extract the compressed file and open the folder created after the extraction of the file.
-11. Here look for file `Run.bat` and run it.
-    - If you previously have a MagiskOnWSA installation, it will automatically uninstall the previous one while **preserving all user data** and install the new one, so don't worry about your data.
-    - If you have an official WSA installation, you should uninstall it first. (In case you want to preserve your data, you can backup `%LOCALAPPDATA%\Packages\MicrosoftCorporationII.WindowsSubsystemForAndroid_8wekyb3d8bbwe\LocalCache\userdata.vhdx` before uninstallation and restore it after installation.)
-    - If the popup windows disappear **without asking administrative permission** and WSA is not installed successfully, you should manually run `Install.ps1` as Administrator:
-        1. Press `Win+x` and select `Windows Terminal (Admin)`.
-        2. Input `cd "{X:\path\to\your\extracted\folder}"` and press `enter`, and remember to replace `{X:\path\to\your\extracted\folder}` including the `{}`, for example `cd "D:\wsa"`
-        3. Input `PowerShell.exe -ExecutionPolicy Bypass -File .\Install.ps1` and press `Enter`.
-        4. The script will run and WSA will be installed.
-        5. If this workaround does not work, your PC is not supported for WSA.
-12. Magisk/Play Store will be launched. Enjoy by installing LSPosed-Zygisk with Zygisk enabled or Riru and LSPosed-Riru.
-
----
-
-## FAQ
-
-<details open>
-
-- Can I delete the installed folder?
-
-  No.
-
-- How can I update WSA to a newer version?
-
-  1. Update build scripts:
-
-      ```bash
-      git pull
-      ```
-
-      For more usage of git, referred to <https://git-scm.com/book>
-
-  2. Rerun the script, replace the content of your previous installation and rerun `Install.ps1`. Don't worry, your data will be preserved.
-
-- How can I get the logcat from WSA?
-
-  `%LOCALAPPDATA%\Packages\MicrosoftCorporationII.WindowsSubsystemForAndroid_8wekyb3d8bbwe\LocalState\diagnostics\logcat`
-
-- How can I update Magisk to a newer version?
-
-  Do the same as updating WSA.
-
-- How to pass Play Integrity (formerly known as SafetyNet)?
-
-  Like all the other emulators, no way.
-
-- Virtualization is not enabled?
-
-  `Install.ps1` helps you enable it if not enabled. After rebooting, rerun `Install.ps1` to install WSA. If it's still not working, you have to enable virtualization in BIOS. That's a long story so ask Google for help.
-
-- How to remount the system as read-write?
-
-  No way in WSA since it's mounted as read-only by Hyper-V. You can modify the system by making a Magisk module. Or directly modify the system.img. Ask Google for help.
-
-- I cannot `adb connect localhost:58526`, what to do?
-
-  Make sure developer mode is enabled. If the issue persists, check the IP address of WSA on the setting page and try `adb connect ip:5555`.
-
-- Why the Magisk online module is empty?
-
-  Magisk actively removes the online module repository. You can install the module locally or by `adb push module.zip /data/local/tmp` and `adb shell su -c magisk --install-module /data/local/tmp/module.zip`.
-
-- Can I use Magisk v23.0 stable or a lower version?
-
-  No. Magisk has bugs preventing itself from running on WSA. Magisk v24+ has fixed them. So you must use Magisk v24 or later.
-
-- How can I get rid of Magisk?
-
-  Choose `none` as the root solution.
-
-- How to install custom GApps?
-
-  [Tutorial](Custom-GApps.md)
-
-- Where can I download MindTheGapps?
-
-  You can download from here [MindTheGapps](https://androidfilehost.com/?w=files&flid=322935) ([mirror](http://downloads.codefi.re/jdcteam/javelinanddart/gapps)).
-
-  Note that there is no x86_64 pre-build, so you need to build it by yourself ([Repository](https://gitlab.com/MindTheGapps/vendor_gapps)).
-
-  Or you can download the built package for 12.1 and 13 for x86_64 from [this page](https://sourceforge.net/projects/wsa-mtg/files/x86_64/).
-
-- Is it possible to migrate data from a lower version like 2305 to a newer version?
-
-  This is certainly available, Microsoft's change of read-only partition from 2305's EROFS to read-only EXT4 only affects the read-only system partition.
-
-  It has no effect on the user data partition. Check the logs if there is a failure to boot.
-
-- How to install KernelSU?
-
-  [Tutorial](KernelSU.md)
-
-</details>
-
----
+For the full feature list, screenshots, FAQ, and credits, see the [upstream README](https://github.com/LSPosed/MagiskOnWSALocal/blob/main/docs/README.md).
 
 ## Credits
 
-- [StoreLib](https://github.com/StoreDev/StoreLib): API for downloading WSA
-- [Magisk](https://github.com/topjohnwu/Magisk): The most famous root solution on Android
-- ~~[The Open GApps Project](https://opengapps.org): One of the most famous Google Apps packages solution~~
-- [WSA-Kernel-SU](https://github.com/LSPosed/WSA-Kernel-SU) and [kernel-assisted-superuser](https://git.zx2c4.com/kernel-assisted-superuser/): The kernel `su` for debugging Magisk Integration
-- ~~[WSAGAScript](https://github.com/ADeltaX/WSAGAScript): The first GApps integration script for WSA~~
-- ~~[erofs-utils](https://github.com/sekaiacg/erofs-utils): Pre-build `erofs-utils` with erofsfuse enabled~~
+All actual WSA-building work belongs to the [LSPosed contributors](https://github.com/LSPosed/MagiskOnWSALocal/graphs/contributors). This fork is just a packaging-layer change to make the existing build pipeline reachable from more distros.
 
-_The repository is provided as a utility._
+## License
 
-_Android is a trademark of Google LLC. Windows is a trademark of Microsoft Corporation._
+GNU AGPL v3, same as upstream. See [LICENSE](LICENSE).
